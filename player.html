@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>腦波調頻陪伴系統</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream:   #F7F3EE;
+    --warm-white: #FBF8F4;
+    --sage:    #7A9E87;
+    --sage-light: #A8C4B0;
+    --sage-dark:  #4E7460;
+    --gold:    #C9A96E;
+    --gold-light: #E2C99A;
+    --deep-green: #2C4A3E;
+    --text-main: #3A3228;
+    --text-muted: #8A7E74;
+    --text-light: #B5A99F;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--cream);
+    font-family: 'Noto Serif TC', serif;
+    color: var(--text-main);
+    overflow-x: hidden;
+  }
+
+  /* ── 背景紋理 ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(122,158,135,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 85% 80%, rgba(201,169,110,0.10) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 40% at 50% 50%, rgba(122,158,135,0.06) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .page { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── 頁首 ── */
+  .header {
+    padding: 28px 24px 16px;
+    text-align: center;
+    border-bottom: 1px solid rgba(122,158,135,0.15);
+  }
+  .header-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--gold); font-style: italic;
+  }
+  .header-title {
+    font-size: 18px; font-weight: 300; color: var(--deep-green);
+    margin-top: 4px; letter-spacing: 1px;
+  }
+
+  /* ── 情境卡片 ── */
+  .scenario-badge {
+    display: inline-block; margin: 20px auto 0;
+    padding: 6px 18px; border-radius: 20px;
+    background: linear-gradient(135deg, var(--sage-light), var(--sage));
+    color: #fff; font-size: 13px; letter-spacing: 1px;
+    box-shadow: 0 2px 12px rgba(78,116,96,0.25);
+  }
+
+  /* ── 主體 ── */
+  .main { flex: 1; padding: 24px 20px; max-width: 420px; margin: 0 auto; width: 100%; }
+
+  /* ── 耳機提醒 ── */
+  .tip-box {
+    background: rgba(201,169,110,0.10);
+    border: 1px solid rgba(201,169,110,0.30);
+    border-radius: 12px; padding: 11px 16px;
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 24px;
+  }
+  .tip-icon { font-size: 20px; }
+  .tip-text { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  .tip-text strong { color: var(--gold); font-weight: 500; }
+
+  /* ── 呼吸動畫 ── */
+  .breath-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    margin: 28px 0;
+  }
+  .breath-ring {
+    position: relative; width: 160px; height: 160px;
+  }
+  .breath-ring .ring {
+    position: absolute; border-radius: 50%;
+    animation: breathe 8s ease-in-out infinite;
+  }
+  .ring-1 {
+    inset: 0;
+    background: radial-gradient(circle, rgba(122,158,135,0.18), transparent 70%);
+    animation-delay: 0s;
+  }
+  .ring-2 {
+    inset: 16px;
+    background: radial-gradient(circle, rgba(122,158,135,0.25), transparent 70%);
+    animation-delay: 0.3s;
+  }
+  .ring-3 {
+    inset: 32px;
+    background: radial-gradient(circle, rgba(78,116,96,0.22), transparent 70%);
+    animation-delay: 0.6s;
+  }
+  .breath-center {
+    position: absolute; inset: 48px;
+    background: linear-gradient(135deg, var(--sage-light), var(--sage));
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(78,116,96,0.30);
+    animation: breathe-center 8s ease-in-out infinite;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .breath-center:active { transform: scale(0.95); }
+  .play-icon { font-size: 24px; color: #fff; user-select: none; transition: opacity 0.3s; }
+
+  @keyframes breathe {
+    0%, 100% { transform: scale(0.95); opacity: 0.5; }
+    50%       { transform: scale(1.08); opacity: 1; }
+  }
+  @keyframes breathe-center {
+    0%, 100% { transform: scale(0.97); box-shadow: 0 4px 20px rgba(78,116,96,0.25); }
+    50%       { transform: scale(1.04); box-shadow: 0 8px 32px rgba(78,116,96,0.45); }
+  }
+
+  .breath-label {
+    margin-top: 16px; font-size: 12px; letter-spacing: 2px;
+    color: var(--text-muted); text-align: center;
+    animation: fade-text 8s ease-in-out infinite;
+  }
+  @keyframes fade-text {
+    0%, 100% { opacity: 0.5; }
+    50%       { opacity: 1; }
+  }
+
+  /* ── 進度條 ── */
+  .audio-controls {
+    background: var(--warm-white);
+    border: 1px solid rgba(122,158,135,0.20);
+    border-radius: 16px; padding: 18px 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 16px rgba(44,74,62,0.06);
+  }
+  .progress-wrap { position: relative; margin-bottom: 10px; }
+  .progress-bar {
+    width: 100%; height: 4px; background: rgba(122,158,135,0.20);
+    border-radius: 2px; appearance: none; cursor: pointer; outline: none;
+    accent-color: var(--sage);
+  }
+  .time-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-light); }
+
+  .ctrl-row {
+    display: flex; align-items: center; justify-content: center; gap: 20px;
+    margin-top: 14px;
+  }
+  .ctrl-btn {
+    background: none; border: none; cursor: pointer; font-size: 20px;
+    color: var(--text-muted); transition: color 0.2s, transform 0.15s;
+  }
+  .ctrl-btn:active { transform: scale(0.9); }
+  .ctrl-btn.main-btn {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--sage), var(--sage-dark));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: #fff;
+    box-shadow: 0 4px 16px rgba(78,116,96,0.35);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .ctrl-btn.main-btn:active { transform: scale(0.94); box-shadow: 0 2px 8px rgba(78,116,96,0.25); }
+
+  /* ── 情境文案 ── */
+  .scenario-text {
+    background: var(--warm-white);
+    border-left: 3px solid var(--gold-light);
+    border-radius: 0 12px 12px 0;
+    padding: 16px 18px; margin-bottom: 24px;
+    font-size: 14px; line-height: 2; color: var(--text-main);
+    font-style: italic;
+  }
+
+  /* ── 感受選擇 ── */
+  .section-title {
+    font-size: 12px; letter-spacing: 2px; color: var(--text-muted);
+    margin-bottom: 12px; text-align: center;
+  }
+  .feedback-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    margin-bottom: 28px;
+  }
+  .fb-btn {
+    background: var(--warm-white);
+    border: 1.5px solid rgba(122,158,135,0.25);
+    border-radius: 12px; padding: 12px 6px;
+    cursor: pointer; text-align: center;
+    transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+  }
+  .fb-btn .emoji { font-size: 22px; }
+  .fb-btn .label { font-size: 11px; color: var(--text-muted); }
+  .fb-btn.selected {
+    border-color: var(--sage);
+    background: rgba(122,158,135,0.10);
+  }
+  .fb-btn.selected .label { color: var(--sage-dark); }
+  .fb-btn:active { transform: scale(0.95); }
+
+  /* ── 完成按鈕 ── */
+  .submit-btn {
+    width: 100%; padding: 16px;
+    background: linear-gradient(135deg, var(--gold-light), var(--gold));
+    border: none; border-radius: 14px;
+    font-family: 'Noto Serif TC', serif;
+    font-size: 15px; letter-spacing: 2px; color: #fff;
+    cursor: pointer; margin-bottom: 12px;
+    box-shadow: 0 4px 20px rgba(201,169,110,0.35);
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+  }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .submit-btn:not(:disabled):active { transform: scale(0.98); box-shadow: 0 2px 10px rgba(201,169,110,0.25); }
+
+  .skip-btn {
+    width: 100%; padding: 12px; background: none; border: none;
+    font-family: 'Noto Serif TC', serif;
+    font-size: 13px; color: var(--text-light); cursor: pointer;
+    margin-bottom: 32px;
+  }
+
+  /* ── 成功畫面 ── */
+  .success-screen {
+    display: none; flex-direction: column; align-items: center;
+    justify-content: center; padding: 48px 24px; text-align: center;
+    flex: 1;
+  }
+  .success-screen.show { display: flex; }
+  .success-icon { font-size: 56px; margin-bottom: 20px; animation: pop 0.5s ease; }
+  @keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 80% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+  .success-title { font-size: 22px; color: var(--deep-green); font-weight: 300; margin-bottom: 10px; }
+  .success-sub { font-size: 13px; color: var(--text-muted); line-height: 1.8; }
+
+  /* ── Loading overlay ── */
+  .loading-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(247,243,238,0.85); z-index: 99;
+    align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+  }
+  .loading-overlay.show { display: flex; }
+  .loader {
+    width: 36px; height: 36px; border: 3px solid rgba(122,158,135,0.25);
+    border-top-color: var(--sage); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 13px; color: var(--text-muted); letter-spacing: 1px; }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loader"></div>
+  <div class="loading-text">記錄中…</div>
+</div>
+
+<div class="page" id="mainPage">
+  <!-- 頁首 -->
+  <div class="header">
+    <div class="header-label">Brain Wave · Companion</div>
+    <div class="header-title">腦波調頻陪伴系統</div>
+    <div class="scenario-badge" id="scenarioBadge">睡眠放鬆</div>
+  </div>
+
+  <div class="main">
+    <!-- 耳機提醒 -->
+    <div class="tip-box">
+      <div class="tip-icon">🎧</div>
+      <div class="tip-text">建議<strong>戴上耳機</strong>，讓音頻能更深層地調頻你的腦波，效果更好。</div>
+    </div>
+
+    <!-- 呼吸動畫 + 播放圓 -->
+    <div class="breath-wrap">
+      <div class="breath-ring">
+        <div class="ring ring-1"></div>
+        <div class="ring ring-2"></div>
+        <div class="ring ring-3"></div>
+        <div class="breath-center" id="bigPlayBtn" onclick="togglePlay()">
+          <span class="play-icon" id="bigPlayIcon">▶</span>
+        </div>
+      </div>
+      <div class="breath-label" id="breathLabel">輕觸開始，跟著呼吸</div>
+    </div>
+
+    <!-- 音頻控制列 -->
+    <div class="audio-controls">
+      <div class="progress-wrap">
+        <input type="range" class="progress-bar" id="progressBar" value="0" min="0" max="100" step="0.1" oninput="seek(this.value)">
+      </div>
+      <div class="time-row">
+        <span id="currentTime">0:00</span>
+        <span id="totalTime">--:--</span>
+      </div>
+      <div class="ctrl-row">
+        <button class="ctrl-btn" onclick="skip(-15)" title="倒退15秒">⏮ 15s</button>
+        <button class="ctrl-btn main-btn" id="playBtn" onclick="togglePlay()">▶</button>
+        <button class="ctrl-btn" onclick="skip(15)" title="快進15秒">15s ⏭</button>
+      </div>
+    </div>
+
+    <!-- 情境文案 -->
+    <div class="scenario-text" id="scenarioText">
+      讓自己慢下來。<br>
+      今晚，只需要跟著音頻呼吸，<br>
+      讓腦波自然回到平靜的頻率。
+    </div>
+
+    <!-- 感受回饋 -->
+    <div class="section-title">── 此刻的感受 ──</div>
+    <div class="feedback-grid">
+      <div class="fb-btn" onclick="selectFeedback(this,'放鬆了')">
+        <span class="emoji">😌</span><span class="label">放鬆了</span>
+      </div>
+      <div class="fb-btn" onclick="selectFeedback(this,'平靜許多')">
+        <span class="emoji">🌿</span><span class="label">平靜許多</span>
+      </div>
+      <div class="fb-btn" onclick="selectFeedback(this,'很舒服')">
+        <span class="emoji">✨</span><span class="label">很舒服</span>
+      </div>
+      <div class="fb-btn" onclick="selectFeedback(this,'感受不明顯')">
+        <span class="emoji">🤔</span><span class="label">感受不明顯</span>
+      </div>
+      <div class="fb-btn" onclick="selectFeedback(this,'想繼續聽')">
+        <span class="emoji">🔁</span><span class="label">想繼續聽</span>
+      </div>
+      <div class="fb-btn" onclick="selectFeedback(this,'快睡著了')">
+        <span class="emoji">😴</span><span class="label">快睡著了</span>
+      </div>
+    </div>
+
+    <!-- 送出按鈕 -->
+    <button class="submit-btn" id="submitBtn" onclick="submitFeedback()">完成，記錄今天的狀態</button>
+    <button class="skip-btn" onclick="submitFeedback(true)">略過感受，直接完成</button>
+  </div>
+</div>
+
+<!-- 成功畫面 -->
+<div class="page success-screen" id="successScreen">
+  <div class="success-icon">🌿</div>
+  <div class="success-title">今天做得很好</div>
+  <div class="success-sub">
+    你給了自己一段放鬆的時間。<br>
+    記錄已儲存，我們明天見。<br><br>
+    <span style="color:var(--gold);font-size:12px;letter-spacing:1px;">♡ 每一次調頻，都是對自己的溫柔 ♡</span>
+  </div>
+</div>
+
+<!-- 隱藏音頻元素 -->
+<audio id="audioPlayer" preload="auto"></audio>
+
+<script>
+// ════════════════════════════════════════════
+//  設定區 ── 部署前請修改
+// ════════════════════════════════════════════
+const CONFIG = {
+  // GAS WebApp URL（部署後貼入）
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbwQ4PxnsSWw7Jlc0mJ1LYOMCjCf67qvMtXXeKpMu1GECe2FAXy9Is2xrv1SSZyWzNzyIg/exec',
+
+  // 音頻檔案對應（放在 GitHub Pages 的 /audio/ 資料夾）
+  // 若無音頻，可用免費 binaural beats MP3 替代
+  AUDIO: {
+    sleep:   'audio/sleep.mp3',
+    anxiety: 'audio/anxiety.mp3',
+    focus:   'audio/focus.mp3',
+    emotion: 'audio/emotion.mp3',
+    parent:  'audio/parent.mp3'
+  }
+};
+
+// ════════════════════════════════════════════
+//  情境資料
+// ════════════════════════════════════════════
+const SCENARIOS = {
+  sleep: {
+    label: '🌙 睡眠放鬆',
+    key: 'sleep',
+    text: '讓自己慢下來。<br>今晚，只需要跟著音頻呼吸，<br>讓腦波自然回到平靜的頻率。',
+    breath: '吸氣… 慢慢吐氣…'
+  },
+  anxiety: {
+    label: '🍃 焦慮舒壓',
+    key: 'anxiety',
+    text: '焦慮只是一個信號，不是你的全部。<br>讓這段音頻帶你回到當下，<br>一呼一吸，都是力量。',
+    breath: '感受呼吸，回到此刻'
+  },
+  focus: {
+    label: '🔮 深度專注',
+    key: 'focus',
+    text: '清除雜念，進入心流。<br>讓 Gamma 波帶你進入清醒專注的狀態，<br>思緒清晰，一切有序。',
+    breath: '專注在此刻的聲音'
+  },
+  emotion: {
+    label: '🌧 情緒低潮',
+    key: 'emotion',
+    text: '你不需要假裝沒事。<br>讓這段頻率輕輕托住你，<br>情緒流動，是自我療癒的開始。',
+    breath: '允許自己感受'
+  },
+  parent: {
+    label: '🤱 家長冷靜',
+    key: 'parent',
+    text: '先照顧好自己，<br>才能給孩子最好的愛。<br>深呼吸，讓大腦從「戰或逃」模式中走出來。',
+    breath: '放下張力，回到平靜'
+  }
+};
+
+// ════════════════════════════════════════════
+//  初始化
+// ════════════════════════════════════════════
+let selectedFeedback = '';
+let playStartTime = null;
+let totalDuration = 0;
+let isPlaying = false;
+let scenarioKey = 'sleep';
+let userId = '';
+
+const audio = document.getElementById('audioPlayer');
+const playBtn = document.getElementById('playBtn');
+const bigPlayIcon = document.getElementById('bigPlayIcon');
+const progressBar = document.getElementById('progressBar');
+
+function init() {
+  // 從 URL 參數讀取情境和 userId
+  const params = new URLSearchParams(window.location.search);
+  scenarioKey = params.get('s') || 'sleep';
+  userId = params.get('uid') || '';
+
+  if (!SCENARIOS[scenarioKey]) scenarioKey = 'sleep';
+  const sc = SCENARIOS[scenarioKey];
+
+  // 套用情境
+  document.getElementById('scenarioBadge').textContent = sc.label;
+  document.getElementById('scenarioText').innerHTML = sc.text;
+  document.getElementById('breathLabel').textContent = sc.breath;
+  document.title = sc.label + ' · 腦波調頻';
+
+  // 設定音頻
+  audio.src = CONFIG.AUDIO[scenarioKey];
+
+  // 音頻事件
+  audio.addEventListener('loadedmetadata', () => {
+    totalDuration = audio.duration;
+    document.getElementById('totalTime').textContent = formatTime(totalDuration);
+  });
+  audio.addEventListener('timeupdate', updateProgress);
+  audio.addEventListener('ended', onAudioEnd);
+}
+
+// ════════════════════════════════════════════
+//  播放控制
+// ════════════════════════════════════════════
+function togglePlay() {
+  if (isPlaying) {
+    audio.pause();
+    setPlayIcon(false);
+  } else {
+    if (!playStartTime) playStartTime = new Date();
+    audio.play().catch(() => {
+      // 瀏覽器自動播放政策：顯示提示
+      document.getElementById('breathLabel').textContent = '請點擊中央圓圈開始';
+    });
+    setPlayIcon(true);
+  }
+  isPlaying = !isPlaying;
+}
+
+function setPlayIcon(playing) {
+  const icon = playing ? '⏸' : '▶';
+  playBtn.textContent = icon;
+  bigPlayIcon.textContent = icon;
+}
+
+function skip(sec) {
+  audio.currentTime = Math.max(0, Math.min(audio.currentTime + sec, audio.duration || 0));
+}
+
+function seek(val) {
+  if (audio.duration) audio.currentTime = (val / 100) * audio.duration;
+}
+
+function updateProgress() {
+  if (!audio.duration) return;
+  const pct = (audio.currentTime / audio.duration) * 100;
+  progressBar.value = pct;
+  document.getElementById('currentTime').textContent = formatTime(audio.currentTime);
+}
+
+function onAudioEnd() {
+  isPlaying = false;
+  setPlayIcon(false);
+  document.getElementById('breathLabel').textContent = '播放完成 ✦ 請選擇感受';
+}
+
+function formatTime(sec) {
+  if (!sec || isNaN(sec)) return '0:00';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+// ════════════════════════════════════════════
+//  回饋
+// ════════════════════════════════════════════
+function selectFeedback(el, val) {
+  document.querySelectorAll('.fb-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedFeedback = val;
+}
+
+// ════════════════════════════════════════════
+//  送出
+// ════════════════════════════════════════════
+async function submitFeedback(skip = false) {
+  const overlay = document.getElementById('loadingOverlay');
+  overlay.classList.add('show');
+
+  const endTime = new Date();
+  const duration = playStartTime
+    ? Math.round((endTime - playStartTime) / 1000)
+    : 0;
+
+  const payload = {
+    action: 'logUsage',
+    user_id: userId || 'anonymous',
+    scenario: scenarioKey,
+    duration: duration,
+    feedback: skip ? '略過' : (selectedFeedback || '未填寫'),
+    device: /Mobile|Android|iPhone/.test(navigator.userAgent) ? 'mobile' : 'desktop',
+    source: 'line_liff'
+  };
+
+  try {
+    await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch (e) {
+    // no-cors 模式下 fetch 不會拋錯，失敗也繼續
+    console.warn('Fetch error:', e);
+  }
+
+  overlay.classList.remove('show');
+  document.getElementById('mainPage').style.display = 'none';
+  document.getElementById('successScreen').classList.add('show');
+}
+
+// ════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
